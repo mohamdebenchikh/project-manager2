@@ -1,46 +1,94 @@
-# Laravel + shadcn/ui + InertiaJS Starter Template
+# Project Manager
 
-![Laravel + shadcn/ui + InertiaJS Starter Template](https://raw.githubusercontent.com/mahmudz/laravel-shadcn-app-panel/main/public/repository-cover.png)
+A modern and intuitive project management application built with Laravel, React, and Shadcn UI. Manage your projects, tasks, and team collaborations efficiently with a beautiful and responsive interface.
 
-This is a template to start building a custom user/admin panel quickly.
-Feel free to customize this template to fit the specific needs of your Laravel application!
+![Project Manager Screenshot](public/repository-cover.png)
 
-## Technologies
+## Features
 
-- [Laravel 11](https://laravel.com/docs/)
-- [shadcn/ui](https://ui.shadcn.com/docs)
-- [InertiaJS](https://inertiajs.com/)
+- **Project Management**: Create, organize, and track projects effortlessly
+- **Task Management**: Break down projects into manageable tasks
+- **Team Collaboration**: Invite team members and assign tasks
+- **Real-time Notifications**: Stay updated with project activities
+- **Project Progress Tracking**: Monitor project status and completion
+- **Modern UI/UX**: Built with Shadcn UI for a beautiful user experience
+- **User Authentication**: Secure login and registration system
+
+## Tech Stack
+
+- **Backend**: Laravel 11
+- **Frontend**: React with TypeScript
+- **UI Framework**: Shadcn UI
+- **State Management**: Inertia.js
+- **Database**: MySQL
+- **Authentication**: Laravel Breeze
 
 ## Prerequisites
 
 Before you begin, ensure you have met the following requirements:
 
 - PHP >= 8.2
-- Composer (for package management)
-- Node.js & npm (for frontend dependencies)
-- MySQL or another [compatible database](https://laravel.com/docs/11.x/database#configuration)
+- Composer
+- Node.js & npm
+- MySQL or another compatible database
 
 ## Installation
 
-1. Clone the repository: `git clone https://github.com/mahmudz/laravel-shadcn-app-panel.git`
-2. Navigate into the project directory: `cd [project directory]`
-3. Install PHP dependencies: `composer install`
-4. Copy `.env.example` to `.env` and configure your environment variables, including database settings and application key.
-5. Generate application key: `php artisan key:generate`
-6. Run database migrations: `php artisan migrate`
-7. Optionally, seed the database: `php artisan db:seed`
-8. Install frontend dependencies: `npm install && npm run dev` (for development) or `npm install && npm run build` (for production)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/mahmudz/laravel-shadcn-app-panel.git
+   cd laravel-shadcn-app-panel
+   ```
 
-## Usage
+2. Install PHP dependencies:
+   ```bash
+   composer install
+   ```
 
-To start the development server, run:
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Configure your database and other settings in .env
+   ```
 
-```
-php artisan serve
-```
+4. Generate application key:
+   ```bash
+   php artisan key:generate
+   ```
 
-Access the application in your browser at `http://localhost:8000` by default.
+5. Run database migrations:
+   ```bash
+   php artisan migrate
+   ```
 
-## Contact
+6. Install and build frontend assets:
+   ```bash
+   npm install
+   npm run dev   # for development
+   # or
+   npm run build # for production
+   ```
 
-If you have any questions, feedback, or support requests, you can reach me here [mahmudbappy.pri@gmail.com](https://github.com/mahmudz/laravel-shadcn-app-panel.git)
+## Development
+
+To start the development server:
+
+1. Start Laravel server:
+   ```bash
+   php artisan serve
+   ```
+
+2. Start Vite development server:
+   ```bash
+   npm run dev
+   ```
+
+Access the application at `http://localhost:8000`
+
+## Contributing
+
+Contributions are welcome! Feel free to submit issues and pull requests.
+
+## License
+
+This project is open-sourced software licensed under the [MIT license](LICENSE).
