@@ -12,6 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Team } from "@/types";
+import { Separator } from "@/components/ui/separator";
 
 interface Props {
     team: Team;
@@ -21,7 +22,7 @@ export default function TeamInformation({ team }: Props) {
     const { data, setData, patch, processing, errors } = useForm({
         name: team.name,
         description: team.description || "",
-        is_public: team.is_public || false,
+        personal_team: team.personal_team || false,
     });
 
     const updateTeam = (e: React.FormEvent) => {
@@ -34,10 +35,7 @@ export default function TeamInformation({ team }: Props) {
             <CardHeader>
                 <CardTitle>Team Information</CardTitle>
                 <CardDescription>
-                    {team.personal_team 
-                        ? "Manage your personal team's information and visibility."
-                        : "Update your team's basic information."
-                    }
+                    Update your team's information and settings
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -67,20 +65,20 @@ export default function TeamInformation({ team }: Props) {
                         )}
                     </div>
 
-                    {team.personal_team && (
-                        <div className="flex items-center justify-between space-y-0">
-                            <div className="space-y-0.5">
-                                <Label>Public Team</Label>
-                                <div className="text-sm text-muted-foreground">
-                                    Make your personal team visible to other users. They can request to join your team.
-                                </div>
+                    <Separator className="my-4" />
+
+                    <div className="flex items-center justify-between space-y-0">
+                        <div className="space-y-0.5">
+                            <Label>Personal Team</Label>
+                            <div className="text-sm text-muted-foreground">
+                                Personal teams have unlimited member capacity and additional features
                             </div>
-                            <Switch
-                                checked={data.is_public}
-                                onCheckedChange={(checked) => setData("is_public", checked)}
-                            />
                         </div>
-                    )}
+                        <Switch
+                            checked={data.personal_team}
+                            onCheckedChange={(checked) => setData("personal_team", checked)}
+                        />
+                    </div>
 
                     <Button type="submit" disabled={processing}>
                         Save Changes

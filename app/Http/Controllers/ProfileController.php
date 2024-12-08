@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,11 +50,25 @@ class ProfileController extends Controller
             'avatar' => ['required', 'string'],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+        $oldAvatar = $user->avatar;
+
+        // Update the user's avatar
+        $user->update([
             'avatar' => $request->avatar,
         ]);
 
-        return redirect()->back()->with('success','Your avatar has been updated.');
+        // Remove old avatar if it exists and is not the default avatar
+        if ($oldAvatar && $oldAvatar !== $request->avatar) {
+            // Extract the path from the full URL or base64 string
+            $path = str_replace('/storage/', '', parse_url($oldAvatar, PHP_URL_PATH));
+            
+            if ($path && Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Your avatar has been updated.');
     }
 
     /**

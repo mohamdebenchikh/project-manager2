@@ -33,9 +33,8 @@ class HandleInertiaRequests extends Middleware
         $currentTeam = $user ? $user->currentTeam : null;
         $currentTeamRole = null;
 
-        if ($user && $currentTeam) {
-            $teamMember = $currentTeam->members()->where('user_id', $user->id)->first();
-            $currentTeamRole = $teamMember ? $teamMember->role : null;
+        if ($user) {
+            $currentTeamRole = $user->getCurrentTeamRole();
         }
 
         return array_merge(parent::share($request), [
@@ -62,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                 'unread_count' => $user->unreadNotifications()->count(),
             ] : null,
             'flash' => [
+                'success' => fn () => $request->session()->get('success'),
                 'message' => fn () => $request->session()->get('message')
             ],
         ]);

@@ -78,27 +78,21 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request)
     {
-        $task = Task::create([
+        $user = auth()->user();
+        $team = $user->currentTeam;
+
+        $task = $team->tasks()->create([
             'title' => $request->title,
             'description' => $request->description,
-            'project_id' => $request->project_id ?: null,
-            'team_id' => auth()->user()->currentTeam->id,
-            'user_id' => auth()->id(),
-            'priority' => $request->priority,
-            'status' => $request->status,
-            'due_date' => $request->due_date,
-            'start_date' => $request->start_date,
-            'estimated_hours' => $request->estimated_hours,
-            'actual_hours' => $request->actual_hours,
-            'is_milestone' => $request->is_milestone,
-            'completion_percentage' => $request->completion_percentage,
+            'user_id' => $user->id,
+            'team_id' => $team->id,
+            'status' => 'open',
+            'priority' => 'low',
+            'completion_percentage' => 0,
         ]);
 
-        if ($request->assignee_ids) {
-            $task->assignees()->sync($request->assignee_ids);
-        }
-
-        return redirect()->route('tasks.show', $task->id);
+        return redirect()->route('tasks.edit', $task->id)
+            ->with('success', 'Task created successfully. Add more details now.');
     }
 
     /**

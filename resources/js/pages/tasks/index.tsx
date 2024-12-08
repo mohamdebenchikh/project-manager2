@@ -12,6 +12,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { QuickTaskDialog } from "@/components/tasks/quick-task-dialog";
 
 interface User {
     id: number;
@@ -208,14 +209,9 @@ export default function Index({
     return (
         <AuthenticatedLayout>
             <div className="flex-1 space-y-4 p-8 pt-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between space-x-2">
                     <h2 className="text-3xl font-bold tracking-tight">Tasks</h2>
-                    <Button asChild>
-                        <Link href={route("tasks.create")}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Task
-                        </Link>
-                    </Button>
+                    <QuickTaskDialog />
                 </div>
 
                 <DataTable

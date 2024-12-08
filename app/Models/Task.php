@@ -21,16 +21,14 @@ class Task extends Model
         'description',
         'project_id',
         'team_id',
-        'user_id', // creator
-        'priority', // enum: low, medium, high, urgent
-        'status', // enum: open, in_progress, review, completed, closed
+        'user_id',
+        'priority',
+        'status',
         'due_date',
         'start_date',
         'estimated_hours',
         'actual_hours',
-        'labels', // JSON array of labels
-        'order', // for task ordering within a project/team
-        'parent_id', // for subtasks
+        'labels',
         'is_milestone',
         'completion_percentage',
     ];

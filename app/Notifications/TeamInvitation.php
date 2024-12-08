@@ -36,8 +36,8 @@ class TeamInvitation extends Notification
         return [
             'message' => "You have been invited to join {$this->team->name} as a {$this->invitation->role}.",
             'team_name' => $this->team->name,
-            'accept_url' => route('team-invitations.accept', $this->invitation->token),
             'invitation_token' => $this->invitation->token,
+            'accept_url' => route('team-invitations.accept', $this->invitation->token),
             'decline_url' => route('team-invitations.decline', $this->invitation->token),
         ];
     }

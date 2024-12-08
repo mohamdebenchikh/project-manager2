@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useForm, usePage } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
 import { FormEventHandler } from "react";
@@ -20,18 +21,44 @@ export default function UpdateProfileInformation({
 }) {
     const user = usePage<PageProps>().props.auth.user;
 
+    console.log('Initial User Data:', user);
+
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
-            name: user.name,
-            email: user.email,
-            bio: user.bio || "",
+            name: user?.name || '',
+            email: user?.email || '',
+            bio: user?.bio || '',
         });
+
+    useEffect(() => {
+        if (user) {
+            setData({
+                name: user.name,
+                email: user.email,
+                bio: user.bio || '',
+            });
+        }
+    }, [user]);
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        
+        console.log('Form Data:', {
+            name: data.name,
+            email: data.email,
+            bio: data.bio,
+        });
+
         patch(route("profile.update"), {
             preserveScroll: true,
-            forceFormData: true,
+            onError: (errors) => {
+                console.log('Validation Errors:', errors);
+            },
+            data: {
+                name: data.name,
+                email: data.email,
+                bio: data.bio,
+            },
         });
     };
 
@@ -58,9 +85,9 @@ export default function UpdateProfileInformation({
                     <Textarea
                         id="bio"
                         className="mt-1 block w-full"
-                        value={data.bio}
                         onChange={(e) => setData("bio", e.target.value)}
                         rows={4}
+                        defaultValue={data.bio}
                         placeholder="Tell us about yourself..."
                     />
                     <InputError className="mt-2" message={errors.bio} />

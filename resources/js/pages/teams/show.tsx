@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { UsersIcon, Settings } from 'lucide-react';
 import TeamDangerZone from './partials/team-danger-zone';
 
@@ -14,10 +14,11 @@ import TeamDangerZone from './partials/team-danger-zone';
 export default function Show({ auth, team }: PageProps) {
     const currentUser = auth.user;
     const isOwner = team.owner_id === currentUser.id;
-    const userRole = team.members.find((member: any) => member.user.id === currentUser.id)?.role || '';
+    const currentUserRole = team.currentUserRole;
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout header={team.name}>
+            <Head title={team.name} />
             <div className="flex-1 space-y-4 p-8 pt-6">
                 <div className="flex items-center justify-between">
                     <div>
@@ -71,12 +72,12 @@ export default function Show({ auth, team }: PageProps) {
                                         <div key={member.id} className="flex items-center justify-between">
                                             <div className="flex items-center space-x-4">
                                                 <Avatar>
-                                                    <AvatarImage src={member.user.profile_photo_url} />
-                                                    <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
+                                                    <AvatarImage src={member.avatar ?? ""} />
+                                                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <p className="text-sm font-medium leading-none">{member.user.name}</p>
-                                                    <p className="text-sm text-muted-foreground">{member.user.email}</p>
+                                                    <p className="text-sm font-medium leading-none">{member.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{member.email}</p>
                                                 </div>
                                             </div>
                                             <Badge>{member.role}</Badge>
@@ -97,7 +98,7 @@ export default function Show({ auth, team }: PageProps) {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <TeamDangerZone team={team} userRole={userRole} />
+                                    <TeamDangerZone team={team} userRole={currentUserRole || ''} />
                                 </CardContent>
                             </Card>
                         </TabsContent>

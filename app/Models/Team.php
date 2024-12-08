@@ -25,6 +25,8 @@ class Team extends Model
         'name',
         'description',
         'owner_id',
+        'personal_team',
+        'active'
     ];
 
     protected $casts = [
@@ -58,18 +60,17 @@ class Team extends Model
     /**
      * Get all of the team's users including its owner.
      */
-    public function members()
+    public function allMembers()
     {
         return $this->belongsToMany(User::class, 'team_members')
             ->withPivot('role')
-            ->withTimestamps()
-            ->orWhere('users.id', $this->owner_id);
+            ->withTimestamps();
     }
 
     /**
      * Get all of the team's users excluding its owner.
      */
-    public function users()
+    public function members()
     {
         return $this->belongsToMany(User::class, 'team_members')
             ->withPivot('role')
@@ -116,14 +117,11 @@ class Team extends Model
             ->first();
 
         if ($existingMember) {
-            $existingMember->update(['role' => $role]);
+            $this->members()->updateExistingPivot($user->id, ['role' => $role]);
             return $existingMember;
         }
 
-        return $this->members()->create([
-            'user_id' => $user->id,
-            'role' => $role
-        ]);
+        return $this->members()->attach($user->id, ['role' => $role]);
     }
 
     public function removeMember(User $user)

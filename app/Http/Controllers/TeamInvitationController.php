@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
-use Carbon\Carbon;
+use Inertia\Inertia;
 
 class TeamInvitationController extends Controller
 {
@@ -27,46 +27,49 @@ class TeamInvitationController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('query');
-        
+
         $team = $request->user()->currentTeam;
         return User::where(function ($q) use ($query) {
-                $q->where('email', 'like', "%{$query}%")
-                  ->orWhere('name', 'like', "%{$query}%");
-            })
+            $q->where('email', 'like', "%{$query}%")
+                ->orWhere('name', 'like', "%{$query}%");
+        })
             ->whereNotIn('id', function ($q) use ($team) {
                 $q->select('user_id')
-                  ->from('team_members')
-                  ->where('team_id', $team->id);
+                    ->from('team_members')
+                    ->where('team_id', $team->id);
             })
             ->whereNotIn('email', function ($q) use ($team) {
                 $q->select('email')
-                  ->from('team_invitations')
-                  ->where('team_id', $team->id);
+                    ->from('team_invitations')
+                    ->where('team_id', $team->id);
             })
             ->limit(5)
-            ->get(['id', 'name', 'email']);
+            ->get(['id', 'name', 'email', 'avatar']);
     }
 
     public function invite(InviteTeamMemberRequest $request, Team $team)
     {
         Gate::authorize('manage-team', $team);
-        
+
         $validated = $request->validated();
         $email = $validated['email'];
-        $role = $validated['role'];
+        $role = $validated['role'] ?? 'member'; // Set default role to 'member' if not provided
 
         // Check rate limiting
         $key = 'team_invitations.' . $request->user()->id;
         if (RateLimiter::tooManyAttempts($key, self::HOURLY_INVITATION_LIMIT)) {
             $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors(['email' => "Too many invitations. Please try again in {$seconds} seconds."]);
+            return redirect()->to(route('teams.invitations.index', $team))
+                ->withErrors(['email' => "Too many invitations. Please try again in {$seconds} seconds."]);
         }
 
         // Check if user is already a member
-        if ($team->members()->whereHas('user', function ($query) use ($email) {
-            $query->where('email', $email);
-        })->exists()) {
-            return back()->withErrors(['email' => 'This user is already a member of the team.']);
+        if ($team->members()
+            ->whereIn('user_id', User::where('email', $email)->pluck('id'))
+            ->exists()
+        ) {
+            return redirect()->back()
+                ->withErrors(['email' => 'This user is already a member of the team.']);
         }
 
         // Check for pending invitation
@@ -76,7 +79,8 @@ class TeamInvitationController extends Controller
             ->first();
 
         if ($existingInvitation) {
-            return back()->withErrors(['email' => 'An invitation has already been sent to this email.']);
+            return redirect()->back()
+                ->withErrors(['email' => 'An invitation has already been sent to this email.']);
         }
 
         // Check team member limit for non-personal teams
@@ -86,7 +90,8 @@ class TeamInvitationController extends Controller
             $maxMembers = config('teams.max_members', 10);
 
             if (($currentMemberCount + $pendingInvitesCount + 1) > $maxMembers) {
-                return back()->withErrors(['email' => 'Team has reached maximum member capacity.']);
+                return redirect()->back()
+                    ->withErrors(['email' => 'Team has reached maximum member capacity.']);
             }
         }
 
@@ -104,160 +109,75 @@ class TeamInvitationController extends Controller
         Mail::to($email)->send(new TeamInvitationMail($invitation));
         RateLimiter::hit($key);
 
-        // Send notification to user
-        if ($user = User::where('email', $email)->first()) {
-            $user->notify(new TeamInvitationNotification($team,$invitation));
+        // Send notification to user if they exist
+        if ($inviteeUser = $invitation->invitee()) {
+            $inviteeUser->notify(new TeamInvitationNotification($team, $invitation));
         }
 
-
-        return back()->with('success', 'Invitation sent successfully.');
+        return redirect()->back()
+            ->with('success', 'Invitation sent successfully.');
     }
 
-    /**
-     * Send bulk invitations to multiple email addresses
-     */
-    public function bulkInvite(Request $request, Team $team)
-    {
-        Gate::authorize('manage-team', $team);
-
-        $validated = $request->validate([
-            'emails' => ['required', 'array', 'min:1'],
-            'emails.*' => ['required', 'email', 'max:255'],
-            'role' => ['required', 'string', 'in:admin,member,viewer'],
-        ]);
-
-        // Check rate limiting
-        $key = 'team_invitations.' . $request->user()->id;
-        if (RateLimiter::tooManyAttempts($key, self::HOURLY_INVITATION_LIMIT)) {
-            $seconds = RateLimiter::availableIn($key);
-            return back()->withErrors(['limit' => "Too many invitations. Please try again in {$seconds} seconds."]);
-        }
-
-        // Check team member limit for non-personal teams
-        if (!$team->personal_team) {
-            $currentMemberCount = $team->members()->count();
-            $pendingInvitesCount = $team->invitations()->where('status', 'pending')->count();
-            $maxMembers = config('teams.max_members', 10);
-
-            if (($currentMemberCount + $pendingInvitesCount + count($validated['emails'])) > $maxMembers) {
-                return back()->withErrors(['limit' => 'Team has reached maximum member capacity.']);
-            }
-        }
-
-        $successCount = 0;
-        $errors = [];
-
-        foreach ($validated['emails'] as $email) {
-            // Check if user is already a member
-            if ($team->members()->whereHas('user', function ($query) use ($email) {
-                $query->where('email', $email);
-            })->exists()) {
-                $errors[] = "{$email} is already a member of the team.";
-                continue;
-            }
-
-            // Check for pending invitation
-            $existingInvitation = $team->invitations()
-                ->where('email', $email)
-                ->whereIn('status', ['pending', 'expired'])
-                ->first();
-
-            if ($existingInvitation) {
-                if ($existingInvitation->status === 'expired') {
-                    // Re-activate expired invitation
-                    $existingInvitation->update([
-                        'status' => 'pending',
-                        'token' => Str::random(64),
-                        'expires_at' => now()->addDays(7),
-                        'reminder_count' => 0,
-                        'reminder_sent_at' => null
-                    ]);
-                } else {
-                    $errors[] = "An invitation has already been sent to {$email}.";
-                    continue;
-                }
-            } else {
-                // Create new invitation
-                $invitation = $team->invitations()->create([
-                    'email' => $email,
-                    'role' => $validated['role'],
-                    'token' => Str::random(64),
-                    'expires_at' => now()->addDays(7),
-                    'invited_by' => $request->user()->id,
-                    'status' => 'pending'
-                ]);
-
-                // Send invitation email
-                Mail::to($email)->send(new TeamInvitationMail($invitation));
-                if($user = User::where('email', $email)->first()) {
-                    $user->notify(new TeamInvitationNotification($team,$invitation));
-                }
-                
-                $successCount++;
-            }
-        }
-
-        RateLimiter::hit($key);
-
-        if (count($errors) > 0) {
-            return back()->withErrors(['invitations' => $errors]);
-        }
-
-        return back()->with('success', "{$successCount} invitation(s) sent successfully.");
-    }
 
     public function accept(Request $request, string $token)
     {
         try {
+            // Get invitation
             $invitation = TeamInvitation::where('token', $token)
                 ->where('status', 'pending')
                 ->firstOrFail();
 
+            // Check if invitation is for the current user
             if ($invitation->email !== $request->user()->email) {
-                return back()->with('error', 'This invitation was not meant for you.');
+                return redirect()->back()
+                    ->withErrors(['error' => 'This invitation was not meant for you.']);
             }
 
+            // Check if invitation has expired
             if ($invitation->expires_at->isPast()) {
                 $invitation->update(['status' => 'expired']);
-                return back()->with('error', 'This invitation has expired.');
+                return redirect()->back()
+                    ->withErrors(['error' => 'This invitation has expired.']);
             }
 
             // Add user to team
             $team = $invitation->team;
-            $team->members()->create([
-                'user_id' => $request->user()->id,
-                'role' => $invitation->role
-            ]);
+            if (!$team) {
+                \Log::error('Team not found for invitation', ['invitation_id' => $invitation->id]);
+                return redirect()->back()
+                    ->withErrors(['error' => 'Team not found']);
+            }
+
+            $team->addMember($request->user(), $invitation->role);
+
 
             // Mark invitation as accepted
             $invitation->update(['status' => 'accepted']);
 
             // Delete the notification
             $request->user()->notifications()
-                ->where('type', TeamInvitationNotification::class)
                 ->where('data->invitation_token', $token)
                 ->delete();
 
             // Notify team owner and admins
             $teamAdmins = $team->members()
-                ->whereIn('role', ['owner', 'admin'])
-                ->with('user')
-                ->get()
-                ->pluck('user');
+                ->whereIn('role', ['admin'])
+                ->get();
 
             foreach ($teamAdmins as $admin) {
-                $admin->notify(new \App\Notifications\TeamMemberAdded(
+                $admin->notify(new TeamMemberAdded(
                     $team,
                     $request->user(),
                     $invitation->role
                 ));
             }
 
-            return redirect()->route('dashboard')
+            return redirect()->back()
                 ->with('success', "You have successfully joined {$team->name}!");
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Something went wrong while accepting the invitation.');
+            return redirect()->back()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 
@@ -270,16 +190,22 @@ class TeamInvitationController extends Controller
 
             // Delete the notification
             $request->user()->notifications()
-                ->where('type', TeamInvitationNotification::class)
                 ->where('data->invitation_token', $token)
                 ->delete();
 
             // Update invitation status to declined
             $invitation->update(['status' => 'declined']);
 
-            return redirect()->back()->with('success', 'Invitation declined.');
+            // Find and notify the invitee if they exist
+            if ($inviter = $invitation->inviter()) {
+                $inviter->notify(new TeamInvitationCancelled($invitation->team));
+            }
+
+            return redirect()->back()
+                ->with('success', 'Invitation declined successfully.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Something went wrong while declining the invitation.');
+            return redirect()->back()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 
@@ -295,44 +221,13 @@ class TeamInvitationController extends Controller
         }
 
         // Find and notify the invitee if they exist
-        $invitee = User::where('email', $invitation->email)->first();
-        if ($invitee) {
+        if ($invitee = $invitation->invitee()) {
             $invitee->notify(new TeamInvitationCancelled($team));
         }
 
         $invitation->delete();
 
-        return back()->with('success', 'Invitation cancelled successfully.');
-    }
-
-    /**
-     * Send a reminder for a pending invitation
-     */
-    public function remind(Request $request, Team $team, TeamInvitation $invitation)
-    {
-        Gate::authorize('manage-team', $team);
-
-        if ($invitation->team_id !== $team->id) {
-            abort(404);
-        }
-
-        if ($invitation->status !== 'pending') {
-            return back()->withErrors(['status' => 'This invitation is no longer pending.']);
-        }
-
-        if (!$invitation->canSendReminder()) {
-            return back()->withErrors(['limit' => 'Cannot send reminder at this time. Please wait 24 hours between reminders.']);
-        }
-
-        // Update reminder count and timestamp
-        $invitation->update([
-            'reminder_count' => $invitation->reminder_count + 1,
-            'reminder_sent_at' => now()
-        ]);
-
-        // Send reminder email
-        Mail::to($invitation->email)->send(new TeamInvitationMail($invitation, true));
-
-        return back()->with('success', 'Reminder sent successfully.');
+        return redirect()->back()
+            ->with('success', 'Invitation cancelled successfully.');
     }
 }

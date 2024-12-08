@@ -29,7 +29,7 @@ export interface Task {
 
 
 export interface Team {
-    members: any;
+    members: User[];
     id: number;
     owner_id: number;
     name: string;
@@ -37,6 +37,7 @@ export interface Team {
     personal_team: boolean;
     active:boolean;
     is_public: boolean;
+    currentUserRole: string | null;
 }
 
 export interface Notification {
@@ -54,6 +55,7 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    role:string,
     email_verified_at: string;
 }
 

@@ -29,14 +29,24 @@ class TeamInvitation extends Model
         'accepted_at' => 'datetime'
     ];
 
+    protected $with = ['team', 'inviter'];
+
+    public function inviter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by');
+    }
+
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
     }
 
-    public function inviter(): BelongsTo
+    /**
+     * Get the user being invited (if they exist in the system)
+     */
+    public function invitee()
     {
-        return $this->belongsTo(User::class, 'invited_by');
+        return User::where('email', $this->email)->first();
     }
 
     public function isExpired(): bool

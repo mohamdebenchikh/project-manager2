@@ -60,6 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(TeamMember::class);
     }
 
+    /**
+     * Get the teams that the user belongs to as a member
+     */
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'team_members')
+                    ->withPivot('role')
+                    ->withTimestamps();
+    }
+
     public function allTeams()
     {
         return Team::where(function ($query) {
@@ -92,5 +102,32 @@ class User extends Authenticatable implements MustVerifyEmail
     public function personalTeam()
     {
         return $this->ownedTeams()->where('personal_team', true)->first();
+    }
+
+    public function assignedTasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_user', 'user_id', 'task_id');
+    }
+
+    public function currentTeamWithRole()
+    {
+        return $this->belongsTo(Team::class, 'current_team_id')
+            ->with(['members' => function ($query) {
+                $query->where('user_id', $this->id);
+            }])
+            ->withCount(['members as is_owner' => function ($query) {
+                $query->where('owner_id', $this->id);
+            }]);
+    }
+
+    public function getCurrentTeamRole()
+    {
+        if (!$this->current_team_id) {
+            return null;
+        }
+        
+        return $this->teamMemberships()
+            ->where('team_id', $this->current_team_id)
+            ->value('role');
     }
 }

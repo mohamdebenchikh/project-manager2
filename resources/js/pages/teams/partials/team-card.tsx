@@ -23,10 +23,13 @@ export default function TeamCard({ team, isOwner, isPersonalTeam }: Props) {
             </div>
             
             <div className="flex -space-x-2">
-                {team.members.slice(0, 4).map((member: any) => (
-                    <Avatar key={member.user.id} className="border-2 border-background">
-                        <AvatarImage src={member.user.profile_photo_url} alt={member.user.name} />
-                        <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
+                {team.members.slice(0, 4).map((member: any, index: number) => (
+                    <Avatar 
+                        key={member.id || `member-${index}`} 
+                        className="border-2 border-background"
+                    >
+                        <AvatarImage src={member.avatar || ''} alt={member.name || `Member ${index}`} />
+                        <AvatarFallback>{member.name?.charAt(0) }</AvatarFallback>
                     </Avatar>
                 ))}
                 {team.members.length > 4 && (

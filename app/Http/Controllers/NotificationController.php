@@ -18,14 +18,14 @@ class NotificationController extends Controller
         $notification = Auth::user()->notifications()->findOrFail($request->id);
         $notification->markAsRead();
 
-        return response()->json(['success' => true]);
+        return redirect()->back();
     }
 
     public function markAllAsRead()
     {
         Auth::user()->unreadNotifications->markAsRead();
 
-        return response()->json(['success' => true]);
+        return redirect()->back();
     }
 
     public function destroy($id)
@@ -33,6 +33,6 @@ class NotificationController extends Controller
         $notification = Auth::user()->notifications()->findOrFail($id);
         $notification->delete();
 
-        return response()->json(['success' => true]);
+        return redirect()->back();
     }
 }

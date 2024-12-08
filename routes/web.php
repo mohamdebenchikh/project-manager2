@@ -23,10 +23,14 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
+
+    // Profile routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.updateAvatar');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Teams routes
     Route::get('/teams', [TeamController::class, 'index'])->name('teams.index');
     Route::post('/teams/switch', [TeamController::class, 'switch'])->name('teams.switch');
     Route::get('/teams/create', [TeamController::class, 'create'])->name('teams.create');
@@ -34,8 +38,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/teams/{team}', [TeamController::class, 'show'])->name('teams.show');
     Route::get('/teams/{team}/settings', [TeamController::class, 'settings'])->name('teams.settings');
     Route::patch('/teams/{team}', [TeamController::class, 'update'])->name('teams.update');
-    Route::patch('/teams/{team}/members/{member}', [TeamController::class, 'updateMemberRole'])->name('teams.members.update')->where('member', '[0-9]+');
-    Route::delete('/teams/{team}/members/{member}', [TeamController::class, 'removeMember'])->name('teams.members.remove')->where('member', '[0-9]+');
+    Route::patch('/teams/{team}/members/{member}', [TeamController::class, 'updateMemberRole'])
+        ->name('teams.update-member-role');
+    Route::delete('/teams/{team}/members/{member}', [TeamController::class, 'removeMember'])
+        ->name('teams.remove-member');
     Route::patch('/teams/{team}/status', [TeamController::class, 'updateStatus'])->name('teams.update-status');
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])->name('teams.destroy');
     Route::get('/current-team-settings', [TeamController::class, 'currentTeamSettings'])->name('current-team-settings');
@@ -58,9 +64,8 @@ Route::middleware(['auth'])->group(function () {
     // Team Invitations
     Route::get('/users/search', [TeamInvitationController::class, 'search'])->name('users.search');
     Route::post('/teams/{team}/invitations', [TeamInvitationController::class, 'invite'])->name('team-invitations.send');
-    Route::post('/teams/{team}/invitations/bulk', [TeamInvitationController::class, 'bulkInvite'])->name('team-invitations.bulk');
-    Route::get('/invitations/{token}/accept', [TeamInvitationController::class, 'accept'])->name('team-invitations.accept');
-    Route::get('/invitations/{token}/decline', [TeamInvitationController::class, 'decline'])->name('team-invitations.decline');
+    Route::post('/invitations/{token}/accept', [TeamInvitationController::class, 'accept'])->name('team-invitations.accept');
+    Route::post('/invitations/{token}/decline', [TeamInvitationController::class, 'decline'])->name('team-invitations.decline');
     Route::delete('/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->name('team-invitations.destroy');
     Route::post('/teams/{team}/invitations/{invitation}/remind', [TeamInvitationController::class, 'remind'])->name('team-invitations.remind');
 

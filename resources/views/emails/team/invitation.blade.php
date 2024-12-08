@@ -1,9 +1,9 @@
 @component('mail::message')
 # {{ $isReminder ? 'Reminder: ' : '' }}Team Invitation
 
-{{ $isReminder ? 'This is a reminder that you' : 'You' }} have been invited by {{ $inviter->name }} to join the team "{{ $team->name }}".
+{{ $isReminder ? 'This is a reminder that you' : 'You' }} have been invited by {{ $inviter?->name ?? 'a team administrator' }} to join the team "{{ $team?->name ?? 'the team' }}".
 
-@if($team->description)
+@if($team?->description)
 **Team Description:**
 {{ $team->description }}
 @endif

@@ -15,18 +15,18 @@ class StoreTaskRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['required', 'string'],
             'project_id' => ['nullable', 'exists:projects,id'],
-            'priority' => ['required', 'in:low,medium,high,urgent'],
-            'status' => ['required', 'in:open,in_progress,review,completed,closed'],
+            'priority' => ['nullable', 'string', 'in:low,medium,high'],
+            'status' => ['nullable', 'string'],
             'due_date' => ['nullable', 'date'],
             'start_date' => ['nullable', 'date'],
-            'estimated_hours' => ['nullable', 'numeric', 'min:0'],
-            'actual_hours' => ['nullable', 'numeric', 'min:0'],
+            'estimated_hours' => ['nullable', 'numeric'],
+            'actual_hours' => ['nullable', 'numeric'],
+            'is_milestone' => ['nullable', 'boolean'],
+            'completion_percentage' => ['nullable', 'integer', 'min:0', 'max:100'],
             'assignee_ids' => ['nullable', 'array'],
             'assignee_ids.*' => ['exists:users,id'],
-            'is_milestone' => ['boolean'],
-            'completion_percentage' => ['integer', 'min:0', 'max:100'],
         ];
     }
 }

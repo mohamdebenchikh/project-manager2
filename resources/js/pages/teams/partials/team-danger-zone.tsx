@@ -38,11 +38,6 @@ export default function TeamDangerZone({ team, userRole }: Props) {
         });
     };
 
-    // Don't show danger zone for personal teams
-    if (team.personal_team) {
-        return null;
-    }
-
     return (
         <Card className="border-destructive">
             <CardHeader>

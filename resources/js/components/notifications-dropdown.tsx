@@ -10,12 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageProps, Notification } from "@/types";
-import { useToast } from "@/hooks/use-toast";
+import { TeamInvitationNotification } from "./notifications/team-invitation-notification";
+import { TeamMemberAddedNotification } from "./notifications/team-member-added-notification";
+import { TeamMemberRemovedNotification } from "./notifications/team-member-removed-notification";
+import { BaseNotification } from "./notifications/base-notification";
 
 export default function NotificationsDropdown() {
     const { notifications } = usePage<PageProps>().props;
     const [open, setOpen] = useState(false);
-    const { toast } = useToast();
 
     const markAsRead = (id: string) => {
         router.post(`/notifications/${id}/mark-as-read`, {}, {
@@ -38,16 +40,6 @@ export default function NotificationsDropdown() {
         if (!notification.read_at) {
             markAsRead(notification.id);
         }
-
-        // Handle special case for team invitations
-        if (notification.type === "TeamInvitation") {
-            return;
-        }
-
-        // Navigate to action URL if present
-        if (notification.data.action_url) {
-            router.visit(notification.data.action_url);
-        }
         
         setOpen(false);
     };
@@ -66,56 +58,37 @@ export default function NotificationsDropdown() {
     };
 
     const renderNotificationContent = (notification: Notification) => {
-        const commonContent = (title: string, message: string) => (
-            <div className="flex flex-col space-y-1">
-                <div className="flex items-center justify-between">
-                    <span className="font-medium">{title}</span>
-                    <span className="text-xs text-muted-foreground">
-                        {notification.created_at}
-                    </span>
-                </div>
-                <p className="text-sm text-muted-foreground">{message}</p>
-            </div>
-        );
-
         switch (notification.type) {
             case "TeamInvitation":
                 return (
-                    <>
-                        {commonContent("Team Invitation", 
-                            `You have been invited to join ${notification.data.team_name} as a ${notification.data.role}`
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                            <Button
-                                variant="default"
-                                size="sm"
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                                onClick={() => handleInvitation(notification, true)}
-                            >
-                                Accept
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                className="flex-1"
-                                onClick={() => handleInvitation(notification, false)}
-                            >
-                                Decline
-                            </Button>
-                        </div>
-                    </>
+                    <TeamInvitationNotification
+                        notification={notification}
+                    />
                 );
             case "TeamMemberAdded":
-                return commonContent("Team Member Added", 
-                    `You have been added to ${notification.data.team_name}`
+                return (
+                    <TeamMemberAddedNotification 
+                        notification={notification}
+                        onNotificationClick={() => handleNotificationClick(notification)}
+                    />
                 );
             case "TeamMemberRemoved":
-                return commonContent("Team Member Removed", 
-                    `You have been removed from ${notification.data.team_name}`
+                return (
+                    <TeamMemberRemovedNotification 
+                        notification={notification}
+                        onNotificationClick={() => handleNotificationClick(notification)}
+                    />
                 );
             default:
                 console.log('Unknown notification type:', notification);
-                return commonContent("Notification", "You have a new notification");
+                return (
+                    <BaseNotification
+                        notification={notification}
+                        title="Notification"
+                        message="You have a new notification"
+                        onNotificationClick={() => handleNotificationClick(notification)}
+                    />
+                );
         }
     };
 
@@ -149,7 +122,7 @@ export default function NotificationsDropdown() {
                         </Button>
                     )}
                 </div>
-                <div className="max-h-96 overflow-y-auto">
+                <div className="max-h-96 space-y-2 overflow-y-auto">
                     {notifications.items.length === 0 ? (
                         <div className="px-4 py-2 text-sm text-muted-foreground">
                             No notifications
@@ -161,7 +134,6 @@ export default function NotificationsDropdown() {
                                 className={`flex items-start gap-2 p-4 cursor-default ${
                                     !notification.read_at ? "bg-accent" : ""
                                 }`}
-                                onClick={() => handleNotificationClick(notification)}
                             >
                                 <div className="flex-1">
                                     {renderNotificationContent(notification)}

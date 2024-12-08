@@ -19,7 +19,9 @@ class TeamInvitationMail extends Mailable
     public function __construct(
         protected TeamInvitation $invitation,
         protected bool $isReminder = false
-    ) {}
+    ) {
+        $this->invitation->load(['team', 'inviter']);
+    }
 
     /**
      * Get the message envelope.
@@ -41,7 +43,7 @@ class TeamInvitationMail extends Mailable
     public function content(): Content
     {
         $team = $this->invitation->team;
-        $inviter = $this->invitation->invitedBy;
+        $inviter = $this->invitation->inviter;
         $expiresIn = now()->diffInDays($this->invitation->expires_at);
 
         return new Content(

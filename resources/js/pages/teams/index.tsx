@@ -6,12 +6,15 @@ import AuthenticatedLayout from '@/layouts/authenticated-layout';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Head } from '@inertiajs/react';
 
 export default function Index({ auth, teams }: PageProps) {
     const currentUser = auth.user;
 
     return (
-        <AuthenticatedLayout>
+        <AuthenticatedLayout header="Teams">
+            <Head title="Teams" />
+            
             <div className="flex-1 space-y-4 p-8 pt-6">
                 <div className="flex items-center justify-between space-y-2">
                     <div>

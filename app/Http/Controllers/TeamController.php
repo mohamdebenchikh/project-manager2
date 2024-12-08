@@ -13,12 +13,7 @@ use App\Notifications\TeamMemberRemoved;
 use App\Notifications\TeamDeleted;
 use Illuminate\Support\Facades\DB;
 
-/**
- * @method \Illuminate\Http\Response removeMember(Team $team, TeamMember $member)
- * @method \Illuminate\Http\Response updateMemberRole(Request $request, Team $team, TeamMember $member)
- * @method \Illuminate\Http\Response updateStatus(Request $request, Team $team)
- * @method \Illuminate\Http\Response destroy(Team $team)
- */
+
 class TeamController extends Controller
 {
     /**
@@ -27,11 +22,12 @@ class TeamController extends Controller
     public function index()
     {
         $user = auth()->user();
+
         return Inertia::render('teams/index', [
             'teams' => $user->allTeams()->map(function ($team) {
                 return array_merge($team->toArray(), [
                     'owner' => $team->owner,
-                    'members' => $team->members()->with('user')->get(),
+                    'members' => $team->members()->get(),
                     'personal_team' => $team->personal_team,
                 ]);
             }),
@@ -116,13 +112,22 @@ class TeamController extends Controller
 
         return Inertia::render('teams/settings', [
             'team' => $team,
-            'members' => $team->members()->with('user')->get(),
+            'members' => $team->allMembers()
+                ->get()
+                ->map(function ($member) {
+                    return [
+                        'id' => $member->id,
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'role' => $member->pivot->role,
+                        'avatar' => $member->avatar
+                    ];
+                }),
             'availableRoles' => ['admin', 'member'],
             'userRole' => $team->isOwnedBy(Auth::user()) ? 'owner' : $team->members()->where('user_id', Auth::id())->first()->role,
             'is_personal_team' => $team->personal_team,
             'invitations' => $team->invitations()
-                ->whereIn('status', ['pending', 'accepted','declined'])
-                ->with('invitee:id,name,email')
+                ->whereIn('status', ['pending', 'accepted', 'declined'])
                 ->orderBy('created_at', 'desc')
                 ->get()
         ]);
@@ -136,10 +141,12 @@ class TeamController extends Controller
      */
     public function show(Team $team)
     {
+        $currentUserRole = $team->isOwnedBy(Auth::user()) ? 'owner' : $team->members()->where('user_id', Auth::id())->first()->role;
         return Inertia::render('teams/show', [
             'team' => array_merge($team->toArray(), [
                 'owner' => $team->owner,
-                'members' => $team->members()->with('user')->get(),
+                'members' => $team->members()->get(),
+                'currentUserRole' => $currentUserRole,
                 'personal_team' => $team->personal_team,
             ]),
         ]);
@@ -162,14 +169,13 @@ class TeamController extends Controller
             'personal_team' => ['boolean'],
         ]);
 
-        // Only allow public teams for personal teams
-        if (isset($validated['personal_team']) && !$team->personal_team) {
-            unset($validated['personal_team']);
-        }
+        $team->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'],
+            'personal_team' => $validated['personal_team'] ?? false,
+        ]);
 
-        $team->update($validated);
-
-        return back()->with('success', 'Team updated successfully.');
+        return redirect()->back()->with('success', 'Team updated successfully.');
     }
 
     /**
@@ -186,12 +192,12 @@ class TeamController extends Controller
         $member = $team->members()->findOrFail($memberId);
 
         // Check if user has permission to update roles
-        if (!$team->isOwnedBy(auth()->user()) && !$team->members()->where('user_id', auth()->id())->where('role', 'admin')->exists()) {
+        if (!$team->isOwnedBy(auth()->user()) && !$team->members()->where('id', auth()->id())->where('role', 'admin')->exists()) {
             abort(403, 'You do not have permission to update member roles.');
         }
 
         // Cannot update team owner's role
-        if ($member->user_id === $team->owner_id) {
+        if ($member->id === $team->owner_id) {
             return back()->withErrors(['error' => 'Cannot modify the team owner\'s role.']);
         }
 
@@ -201,16 +207,14 @@ class TeamController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($member, $validated) {
-                $member->update([
-                    'role' => $validated['role']
-                ]);
-            });
+            DB::table('team_members')
+                ->where('team_id', $team->id)
+                ->where('user_id', $member->id)
+                ->update(['role' => $validated['role']]);
 
-            return back()->with('success', 'Team member role updated successfully.');
+            return redirect()->back()->with('success', 'Team member role updated successfully.');
         } catch (\Exception $e) {
-            report($e);
-            return back()->withErrors(['error' => 'Failed to update team member role.']);
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 

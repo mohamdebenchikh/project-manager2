@@ -51,7 +51,6 @@ class RegisteredUserController extends Controller
             'description' => 'Personal team for ' . $user->name,
             'personal_team' => true,
             'active' => true,
-            'owner_id' => $user->id
         ]);
 
         $team->addMember($user, 'admin');
