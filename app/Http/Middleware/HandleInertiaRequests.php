@@ -45,7 +45,7 @@ class HandleInertiaRequests extends Middleware
                 'current_team_role' => $currentTeamRole,
             ],
             'notifications' => $user ? [
-                'items' => $user->notifications()
+                'items' => $user->unreadNotifications()
                     ->latest()
                     ->take(5)
                     ->get()

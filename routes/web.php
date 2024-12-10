@@ -62,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/tasks/{task}/assignees', [TaskController::class, 'updateAssignees'])->name('tasks.update-assignees');
 
     // Team Invitations
-    Route::get('/users/search', [TeamInvitationController::class, 'search'])->name('users.search');
+    Route::get('/teams/{team}/users/search', [TeamInvitationController::class, 'search'])->name('teams.search-users');
     Route::post('/teams/{team}/invitations', [TeamInvitationController::class, 'invite'])->name('team-invitations.send');
     Route::post('/invitations/{token}/accept', [TeamInvitationController::class, 'accept'])->name('team-invitations.accept');
     Route::post('/invitations/{token}/decline', [TeamInvitationController::class, 'decline'])->name('team-invitations.decline');
@@ -70,9 +70,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/teams/{team}/invitations/{invitation}/remind', [TeamInvitationController::class, 'remind'])->name('team-invitations.remind');
 
     // Notifications Routes
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 require __DIR__.'/auth.php';

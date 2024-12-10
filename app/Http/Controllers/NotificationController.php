@@ -8,31 +8,62 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Auth::user()->notifications;
+        $user = $request->user();
+        $notifications = $user->notifications()
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => class_basename($notification->type),
+                    'data' => $notification->data,
+                    'read_at' => $notification->read_at,
+                    'created_at' => $notification->created_at->diffForHumans(),
+                ];
+            });
+
+        return Inertia::render('Notifications/Index', [
+            'notifications' => [
+                'items' => $notifications,
+                'unread_count' => $user->unreadNotifications()->count(),
+            ],
+        ]);
     }
 
-    public function markAsRead(Request $request)
+    public function markAsRead(Request $request, $id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($request->id);
-        $notification->markAsRead();
+        $notification = $request->user()
+            ->notifications()
+            ->where('id', $id)
+            ->first();
 
-        return redirect()->back();
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        return back();
     }
 
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
-        Auth::user()->unreadNotifications->markAsRead();
+        $request->user()->unreadNotifications->markAsRead();
 
-        return redirect()->back();
+        return back();
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $notification = Auth::user()->notifications()->findOrFail($id);
-        $notification->delete();
+        $notification = $request->user()
+            ->notifications()
+            ->where('id', $id)
+            ->first();
 
-        return redirect()->back();
+        if ($notification) {
+            $notification->delete();
+        }
+
+        return back()->with('success', 'Notification deleted successfully');
     }
 }

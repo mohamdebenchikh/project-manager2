@@ -2,22 +2,31 @@
 
 namespace App\Notifications;
 
-use App\Models\Team;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TeamInvitationCancelled extends Notification
+class DefaultNotification extends Notification
 {
     use Queueable;
 
+    protected string $contentType;
+    protected string $message;
+    protected string $actionUrl;
+
     /**
      * Create a new notification instance.
+     *
+     * @param string $contentType
+     * @param string $message
+     * @param string $actionUrl
      */
-    public function __construct(protected Team $team)
+    public function __construct(string $contentType, string $message, string $actionUrl)
     {
-        //
+        $this->contentType = $contentType;
+        $this->message = $message;
+        $this->actionUrl = $actionUrl;
     }
 
     /**
@@ -36,9 +45,10 @@ class TeamInvitationCancelled extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Team Invitation Cancelled")
-            ->line("Your invitation to join {$this->team->name} has been cancelled.")
-            ->line("If you believe this was a mistake, please contact the team administrator.");
+                    ->line($this->contentType) // Add the content type
+                    ->line($this->message) // Add the message
+                    ->action('View Action', $this->actionUrl) // Add the action URL
+                    ->line('Thank you for using our application!');
     }
 
     /**
@@ -49,9 +59,9 @@ class TeamInvitationCancelled extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => "Your invitation to join {$this->team->name} has been cancelled.",
-            'team_name' => $this->team->name,
-            'action_url' => route('dashboard'),
+            'contentType' => $this->contentType,
+            'message' => $this->message,
+            'actionUrl' => $this->actionUrl,
         ];
     }
 }

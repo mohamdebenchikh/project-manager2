@@ -1,19 +1,17 @@
-import React, { useState } from "react";
-import { usePage, router } from "@inertiajs/react";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { useState } from "react";
+import { usePage, router, Link } from "@inertiajs/react";
+import { Bell, CheckCheck } from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageProps, Notification } from "@/types";
-import { TeamInvitationNotification } from "./notifications/team-invitation-notification";
-import { TeamMemberAddedNotification } from "./notifications/team-member-added-notification";
-import { TeamMemberRemovedNotification } from "./notifications/team-member-removed-notification";
-import { BaseNotification } from "./notifications/base-notification";
+import DefaultNotification from "./notifications/default-notification";
 
 export default function NotificationsDropdown() {
     const { notifications } = usePage<PageProps>().props;
@@ -40,56 +38,10 @@ export default function NotificationsDropdown() {
         if (!notification.read_at) {
             markAsRead(notification.id);
         }
-        
-        setOpen(false);
-    };
-
-    const handleInvitation = (notification: Notification, accept: boolean) => {
-        const url = accept
-            ? notification.data.accept_url
-            : notification.data.decline_url;
-        const method = accept ? 'get' : 'delete';
-
-        router[method](url, {
-            preserveScroll: true,
-            preserveState: true,
-            only: accept ? ['auth.teams', 'auth.current_team', 'notifications'] : ['notifications'],
-        });
-    };
-
-    const renderNotificationContent = (notification: Notification) => {
-        switch (notification.type) {
-            case "TeamInvitation":
-                return (
-                    <TeamInvitationNotification
-                        notification={notification}
-                    />
-                );
-            case "TeamMemberAdded":
-                return (
-                    <TeamMemberAddedNotification 
-                        notification={notification}
-                        onNotificationClick={() => handleNotificationClick(notification)}
-                    />
-                );
-            case "TeamMemberRemoved":
-                return (
-                    <TeamMemberRemovedNotification 
-                        notification={notification}
-                        onNotificationClick={() => handleNotificationClick(notification)}
-                    />
-                );
-            default:
-                console.log('Unknown notification type:', notification);
-                return (
-                    <BaseNotification
-                        notification={notification}
-                        title="Notification"
-                        message="You have a new notification"
-                        onNotificationClick={() => handleNotificationClick(notification)}
-                    />
-                );
+        if (notification.data.action_url) {
+            router.visit(notification.data.action_url);
         }
+        setOpen(false);
     };
 
     return (
@@ -107,7 +59,7 @@ export default function NotificationsDropdown() {
                     )}
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuContent align="end" className="w-96">
                 <div className="flex items-center justify-between px-4 py-2 border-b">
                     <h4 className="font-medium">Notifications</h4>
                     {notifications.unread_count > 0 && (
@@ -122,38 +74,42 @@ export default function NotificationsDropdown() {
                         </Button>
                     )}
                 </div>
-                <div className="max-h-96 space-y-2 overflow-y-auto">
+                <div className="max-h-96 w-full space-y-1 overflow-y-auto overflow-x-hidden">
                     {notifications.items.length === 0 ? (
-                        <div className="px-4 py-2 text-sm text-muted-foreground">
-                            No notifications
+                        <div className=" text-sm text-muted-foreground">
+                            No unread notifications
                         </div>
                     ) : (
                         notifications.items.map((notification) => (
                             <DropdownMenuItem
                                 key={notification.id}
-                                className={`flex items-start gap-2 p-4 cursor-default ${
-                                    !notification.read_at ? "bg-accent" : ""
-                                }`}
+                                className="flex flex-col justify-start items-start p-4 cursor-default bg-accent"
                             >
-                                <div className="flex-1">
-                                    {renderNotificationContent(notification)}
-                                </div>
-                                {!notification.read_at && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            markAsRead(notification.id);
-                                        }}
-                                    >
-                                        <Check className="h-4 w-4" />
-                                    </Button>
-                                )}
+                                <DefaultNotification
+                                    notification={notification}
+                                    onNotificationClick={() => handleNotificationClick(notification)}
+                                />
+                                <button
+                                    className="text-xs text-muted-foreground hover:text-primary-foreground underline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        markAsRead(notification.id);
+                                    }}
+                                >
+                                    Mark as read
+                                </button>
                             </DropdownMenuItem>
                         ))
                     )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                        <Link
+                            href={route("notifications.index")}
+                            className="flex justify-center items-center py-2"
+                        >
+                            View all notifications
+                        </Link>
+                    </DropdownMenuItem>
                 </div>
             </DropdownMenuContent>
         </DropdownMenu>

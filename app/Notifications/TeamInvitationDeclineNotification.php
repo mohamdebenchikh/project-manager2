@@ -2,23 +2,22 @@
 
 namespace App\Notifications;
 
-use App\Models\Team;
+use App\Mail\TeamInvitationMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TeamInvitationCancelled extends Notification
+class TeamInvitationDeclineNotification extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(protected Team $team)
-    {
-        //
-    }
+    public function __construct(
+        protected Team $team,
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -36,9 +35,9 @@ class TeamInvitationCancelled extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Team Invitation Cancelled")
-            ->line("Your invitation to join {$this->team->name} has been cancelled.")
-            ->line("If you believe this was a mistake, please contact the team administrator.");
+        ->subject("Team Invitation Declined")
+        ->line("Your invitation to join {$this->team->name} has been declined.")
+        ->line("If you believe this was a mistake, please contact the team administrator.");
     }
 
     /**
@@ -49,7 +48,7 @@ class TeamInvitationCancelled extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            'message' => "Your invitation to join {$this->team->name} has been cancelled.",
+            'message' => "Your invitation to join {$this->team->name} has been declined.",
             'team_name' => $this->team->name,
             'action_url' => route('dashboard'),
         ];

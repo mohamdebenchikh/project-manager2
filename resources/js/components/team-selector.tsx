@@ -53,7 +53,7 @@ export default function TeamSelector({ teams = [], currentTeam }: TeamSelectorPr
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
-                    <span>{currentTeam?.name}</span>
+                    <span>{currentTeam?.name || "Select Team"} </span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

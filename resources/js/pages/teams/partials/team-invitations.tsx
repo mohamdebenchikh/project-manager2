@@ -32,6 +32,7 @@ import axios from "axios";
 import { toast, useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { InputError } from "@/components/ui/input-error";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
     team: Team;
@@ -68,9 +69,12 @@ export default function TeamInvitations({ team, invitations }: Props) {
         }
 
         try {
-            const response = await axios.get(route("users.search"), {
-                params: { query },
-            });
+            const response = await axios.get(
+                route("teams.search-users", team.id),
+                {
+                    params: { query },
+                }
+            );
             setSearchResults(response.data);
         } catch (error) {
             console.error("Error searching users:", error);
@@ -257,9 +261,14 @@ export default function TeamInvitations({ team, invitations }: Props) {
                                                     {invitation.email}
                                                 </p>
                                             )}
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            Invited as {invitation.role}
-                                        </p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <p className="text-sm text-muted-foreground">
+                                                Invited as {invitation.role}
+                                            </p>
+                                            <Badge variant="outline">
+                                                {invitation.status}
+                                            </Badge>
+                                        </div>
                                     </div>
                                     <Button
                                         variant="ghost"
